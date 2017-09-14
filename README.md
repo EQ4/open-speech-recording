@@ -8,9 +8,11 @@ records the audio, and then POSTs the results back to the server.
 
 ## Running
 
-To get started, you'll need to edit app.yaml to point to your own storage bucket
-and update the session key. If you have the Google Cloud SDK set up, you should
-be able to run a local copy with this command:
+1. Install pip dependencies with `pip install -t lib -r requirements.txt`.
+2. Edit `app.yaml` with updated environment variables.
+
+If you have the Google Cloud SDK set up, you should be able to run a local copy
+with this command:
 
 ```
 dev_appserver.py app.yaml
