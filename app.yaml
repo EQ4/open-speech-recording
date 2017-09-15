@@ -14,6 +14,6 @@ handlers:
 
 #[START env]
 env_variables:
-    CLOUD_STORAGE_BUCKET: open-speech-data
-    SESSION_SECRET_KEY: a427d62b1f748b7af2a965c88a99005
+    CLOUD_STORAGE_BUCKET: the-phrasebook
+    SESSION_SECRET_KEY: \xe2\xabg,M\x9fU\xc1I\xa7\x06\xfa\xdc\xb6^>\x1d\x1c\x19\xbd*\xf8\x91\x1f
 #[END env]
