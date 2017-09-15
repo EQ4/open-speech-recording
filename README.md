@@ -26,6 +26,21 @@ deploy it to an appspot instance, run this:
 gcloud app deploy
 ```
 
+## Input and output formats
+
+Phrases that we want to collect are stored in `static/phrases.json`. Recordings
+will be stored in the bucket specified in the app.yaml environment variable, in
+the path: /$phraseKey_$sessionId_$UUID.ogg.
+
+
+## Notes and TODOs (for Stella/Dan)
+
+- I gave the gs://the-phrasebook bucket the canned public-read-write ACL. This
+  is no good, and it should be set to something that only this AppEngine can
+  write to, and nobody can delete from at all (like a dropbox).
+
+
+
 ## Credits
 
 Thanks to the Mozilla team for the [Web Dictaphone sample application](https://developer.mozilla.org/en-US/docs/Web/API/MediaStream_Recording_API/Using_the_MediaStream_Recording_API#A_sample_application_Web_Dictaphone)
