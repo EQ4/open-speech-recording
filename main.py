@@ -9,6 +9,8 @@ from werkzeug.utils import secure_filename
 
 from google.cloud import storage
 
+import logging
+
 import os
 import uuid
 
@@ -43,16 +45,21 @@ def start():
 
 @app.route('/upload', methods=['POST'])
 def upload():
+    print 'in upload handler'
     session_id = request.cookies.get('session_id')
     if not session_id:
+        print 'no session'
         make_response('No session', 400)
-    word = request.args.get('word')
+    phrase_key = request.args.get('phrase_key')
     audio_data = request.data
-    filename = word + '_' + session_id + '_' + uuid.uuid4().hex + '.ogg'
+    uuid_string = uuid.uuid4().hex
+    filename = phrase_key + '_' + session_id + '_' + uuid_string + '.ogg'
     secure_name = secure_filename(filename)
+    print 'secure_name', secure_name
     # Left in for debugging purposes. If you comment this back in, the data
     # will be saved to the local file system.
     #with open(secure_name, 'wb') as f:
+    #    print('Saving local file at %s.' % secure_name)
     #    f.write(audio_data)
     # Create a Cloud Storage client.
     gcs = storage.Client()
@@ -62,7 +69,7 @@ def upload():
     return make_response('All good')
 
 # CSRF protection, see http://flask.pocoo.org/snippets/3/.
-@app.before_request
+#@app.before_request
 def csrf_protect():
     if request.method == "POST":
         token = session['_csrf_token']
