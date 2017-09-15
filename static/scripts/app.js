@@ -1,3 +1,13 @@
+const PHRASES_URL = 'static/phrases.json';
+
+// TODO: Make these configurable w/ GET params.
+const PHRASE_COUNT = 2;
+const LANGUAGE = 'en_US';
+
+let phrases = [];
+let phraseIndex = -1;
+let currentPhrase = null;
+
 // fork getUserMedia for multiple browser versions, for the future
 // when more browsers support MediaRecorder
 
@@ -69,9 +79,16 @@ if (navigator.getUserMedia) {
       mediaStreamSource.disconnect();
       console.log(mediaRecorder.state);
       record.style.background = "";
-      record.style.color = ""; 
+      record.style.color = "";
       stop.disabled = true;
       record.disabled = false;
+
+      setTimeout(() => {
+        // If there's nothing more to record, prompt to save.
+        if (phraseIndex == PHRASE_COUNT - 1) {
+          promptToSave();
+        }
+      }, 1000);
     }
 
     upload.onclick = function() {
@@ -93,6 +110,7 @@ if (navigator.getUserMedia) {
       deleteButton.textContent = 'Delete';
       deleteButton.className = 'delete';
       clipLabel.textContent = clipName;
+      clipLabel.dataset.phraseKey = currentPhrase.phraseKey;
 
       clipContainer.appendChild(audio);
       clipContainer.appendChild(clipLabel);
@@ -122,7 +140,16 @@ if (navigator.getUserMedia) {
     console.log('The following error occured: ' + err);
   }
 
-  navigator.getUserMedia(constraints, onSuccess, onError);
+  // First fetch the phrases and select the ones we'll use, then request user
+  // media.
+  fetchPhrases().then(phraseList => {
+    // Get all of the phrases in the specified language.
+    phrases = selectPhrases(phraseList, null, LANGUAGE);
+    // Randomize the order.
+    shuffleArray(phrases);
+    console.log('Fetched', phrases.length, 'phrases.');
+    navigator.getUserMedia(constraints, onSuccess, onError);
+  });
 } else {
   console.log('getUserMedia not supported on your browser!');
   document.querySelector('.info-display').innerText = 
@@ -179,39 +206,12 @@ function visualize(stream) {
 }
 
 var wantedWords = [
-  'Zero',
-  'One',
-  'Two',
-  'Three',
-  'Four',
-  'Five',
-  'Six',
-  'Seven',
-  'Eight',
-  'Nine',
-  'On',
-  'Off',
-  'Stop',
-  'Go',
-  'Up',
-  'Down',
-  'Left',
-  'Right',
   'Yes',
-  'No',
+//  'No',
 ];
 
 var fillerWords = [
-  'Dog',
-  'Cat',
-  'Bird',
-  'Tree',
-  'Marvin',
-  'Sheila',
-  'House',
-  'Bed',
-  'Wow',
-  'Happy',
+//  'Happy',
 ];
 
 function getRecordedWords() {
@@ -230,7 +230,7 @@ function getRecordedWords() {
 function getAllWantedWords() {
   var wordCounts = {};
   wantedWords.forEach(function(word) {
-    wordCounts[word] = 5;
+    wordCounts[word] = 2;
   });
   fillerWords.forEach(function(word) {
     wordCounts[word] = 1;
@@ -269,6 +269,9 @@ function unrollWordCounts(wordCounts) {
   return result;
 }
 
+/**
+ * Shuffles an array in-place.
+ */
 function shuffleArray(array) {
   for (var i = array.length - 1; i > 0; i--) {
     var j = Math.floor(Math.random() * (i + 1));
@@ -287,10 +290,17 @@ function getNextWord() {
   return remainingWords[0];
 }
 
+function getNextPhrase() {
+  if (phraseIndex >= PHRASE_COUNT - 1) {
+    return null;
+  }
+  phraseIndex += 1;
+  const phrase = phrases[phraseIndex];
+  return phrase;
+}
+
 function getProgressDescription() {
-  var allWords = unrollWordCounts(getAllWantedWords());
-  var remainingWords = unrollWordCounts(getRemainingWords());
-  return ((allWords.length + 1) - remainingWords.length) + "/" + allWords.length;
+  return (phraseIndex + 1) + '/' + PHRASE_COUNT;
 }
 
 function updateProgress() {
@@ -303,18 +313,25 @@ function startRecording() {
     ignoreAutoPlay = false;
     return;
   }
+  /*
   var word = getNextWord();
   if (word === null) {
     promptToSave();
     return;
   }
+  */
+  currentPhrase = getNextPhrase();
+  if (currentPhrase === null) {
+    promptToSave();
+    return;
+  }
   updateProgress();
-  document.querySelector('.info-display').innerText = word;
+  document.querySelector('.info-display').innerText = currentPhrase.text;
   mediaRecorder.start();
   console.log(mediaRecorder.state);
   console.log("recorder started");
   record.style.background = "red";
-  setTimeout(endRecording, 1500);
+  //setTimeout(endRecording, 1500);
 }
 
 function endRecording() {
@@ -350,11 +367,12 @@ function saveRecordings() {
 
 function uploadNextClip() {
   document.querySelector('.progress-display').innerText = 'Uploading clip ' + 
-	clipIndex + '/' + unrollWordCounts(getAllWantedWords()).length;
+    clipIndex + '/' + allClips.length;
   var clip = allClips[clipIndex];
   clip.style.display = 'None';
   var audioBlobUrl = clip.querySelector('audio').src;
-  var word = clip.querySelector('p').innerText;
+  //var phraseKey = clip.querySelector('p').innerText;
+  var phraseKey = clip.querySelector('p').dataset.phraseKey;
   var xhr = new XMLHttpRequest();
   xhr.open('GET', audioBlobUrl, true);
   xhr.responseType = 'blob';
@@ -362,7 +380,7 @@ function uploadNextClip() {
     if (this.status == 200) {
       var blob = this.response;
       var ajaxRequest = new XMLHttpRequest();
-      var uploadUrl = '/upload?word=' + word + '&_csrf_token=' + csrf_token;
+      var uploadUrl = '/upload?phrase_key=' + phraseKey + '&_csrf_token=' + csrf_token;
       ajaxRequest.open('POST', uploadUrl, true);
       ajaxRequest.setRequestHeader('Content-Type', 'application/json');    
       ajaxRequest.onreadystatechange = function() {
@@ -388,4 +406,47 @@ function uploadNextClip() {
 function allDone() {
   document.cookie = 'all_done=true; path=/';
   location.reload(true);
+}
+
+/**
+ * Returns a Promise that resolves with the phrases that we want to collect.
+ */
+function fetchPhrases() {
+  return fetch(PHRASES_URL).then(response => response.json());
+}
+
+/**
+ * Randomly selects numPhrases phrases from the phraseBook.
+ */
+function selectPhrases(phrases, numPhrases, language) {
+  let langPhrases = phrases.filter(phrase => (phrase.language == language));
+  if (numPhrases === null) {
+    return langPhrases;
+  }
+  if (numPhrases > langPhrases.length) {
+    console.error('Cannot select more phrases than exist.');
+    return [];
+  }
+
+  let indices = [];
+  let phraseCount = 0;
+  while (phraseCount < numPhrases) {
+    // Pick a random index, add it to the indices array (if not already
+    // present), increment phraseCount.
+    let randomIndex = Math.floor(Math.random() * langPhrases.length);
+    if (indices.indexOf(randomIndex) == -1) {
+      // If we found an empty space, add the index.
+      indices.push(randomIndex);
+      phraseCount += 1;
+    }
+  }
+
+  // Now indices has $numPhrases random indices to index into phrases. Get the
+  // phrases.
+  let selected = [];
+  for (let i of indices) {
+    selected.push(langPhrases[i]);
+  }
+
+  return selected;
 }

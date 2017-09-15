@@ -1,0 +1,27 @@
+[
+  {
+    "phraseKey": "000",
+    "text": "My hovercraft is full of eels",
+    "language": "en_US"
+  },
+  {
+    "phraseKey": "001",
+    "text": "Hello. My name is Inigo Montoya. You killed my father. Prepare to die.",
+    "language": "en_US"
+  },
+  {
+    "phraseKey": "002",
+    "text": "Hola. My nombre es Inigo Montoya. Mataste a mi padre. Preparate para morir.",
+    "language": "es_ES"
+  },
+  {
+    "phraseKey": "003",
+    "text": "Hasta siempre, comandante!",
+    "language": "es_ES"
+  },
+  {
+    "phraseKey": "004",
+    "text": "I'd like to go to there!",
+    "language": "en_US"
+  }
+]
